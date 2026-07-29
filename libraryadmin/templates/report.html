@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Инвентаризация фонда{% endblock %}
+{% block content %}
+<h1 class="mb-4"><i class="fas fa-chart-bar text-primary"></i> Инвентаризация книжного фонда</h1>
+
+<!-- Сводка -->
+<div class="summary-cards">
+    <div class="summary-card border-start-info">
+        <div class="summary-icon"><i class="fas fa-book"></i></div>
+        <div><span class="summary-label">Всего книг</span><span class="summary-value">{{ total_books }}</span></div>
+    </div>
+    <div class="summary-card border-start-success">
+        <div class="summary-icon"><i class="fas fa-copy"></i></div>
+        <div><span class="summary-label">Всего экземпляров</span><span class="summary-value">{{ total_instances_sum }}</span></div>
+    </div>
+    <div class="summary-card border-start-warning">
+        <div class="summary-icon"><i class="fas fa-book-open"></i></div>
+        <div><span class="summary-label">Выдано на руках</span><span class="summary-value">{{ issued_sum }}</span></div>
+    </div>
+    <div class="summary-card border-start-success">
+        <div class="summary-icon"><i class="fas fa-check-circle"></i></div>
+        <div><span class="summary-label">Доступно</span><span class="summary-value">{{ total_instances_sum - issued_sum }}</span></div>
+    </div>
+</div>
+
+<!-- Фильтры -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <form method="GET" class="row g-2">
+            <div class="col-auto">
+                <select name="year" class="form-select" onchange="this.form.submit()">
+                    <option value="">Все года</option>
+                    {% for y in years %}
+                    <option value="{{ y }}" {{ 'selected' if year_filter == y }}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-5">
+                <input type="text" name="book" placeholder="Название книги..." value="{{ book_filter }}" class="form-control">
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" type="submit"><i class="fas fa-filter"></i> Фильтр</button>
+            </div>
+            {% if year_filter or book_filter %}
+            <div class="col-auto">
+                <a href="{{ url_for('report') }}" class="btn btn-outline-secondary">Сброс</a>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{% if rows %}
+<!-- Круговая диаграмма: выдано vs доступно -->
+<div class="row mb-4 align-items-start">
+    <div class="col-md-3">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <h6 class="card-title mb-0"><i class="fas fa-chart-pie"></i> Выдано / Доступно</h6>
+                <canvas id="chartReport" width="180" height="180" style="max-width:180px;margin:0 auto"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-9">
+    <table class="table table-hover align-middle bg-white rounded shadow-sm">
+        <thead class="table-light">
+            <tr>
+                <th>Год</th>
+                <th>Название книги</th>
+                <th>Стоимость фонда</th>
+                <th class="text-center">Всего экз.</th>
+                <th class="text-center">Выдано</th>
+                <th class="text-center">Доступно</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in rows %}
+            <tr>
+                <td>{{ r.year }}</td>
+                <td><strong>{{ r.book_name }}</strong></td>
+                <td>{{ "%.2f"|format(r.total_value) }} ₽</td>
+                <td class="text-center">{{ r.total_instances }}</td>
+                <td class="text-center">
+                    <span class="badge {{ 'bg-warning text-dark' if r.issued_instances > 0 else 'bg-success' }}">
+                        {{ r.issued_instances }}
+                    </span>
+                </td>
+                <td class="text-center">
+                    <span class="badge {{ 'bg-success' if r.available_instances > 0 else 'bg-warning text-dark' }}">
+                        {{ r.available_instances }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</div>
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-chart-bar fa-3x"></i>
+    <p class="text-muted">Данные отчёта отсутствуют</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if rows %}
+<script>
+const ctx = document.getElementById('chartReport').getContext('2d');
+new Chart(ctx, {
+    type: 'pie',
+    data: {
+        labels: ['Выдано', 'Доступно'],
+        datasets: [{
+            data: [{{ pie_issued }}, {{ pie_available }}],
+            backgroundColor: ['rgba(255, 193, 7, 0.8)', 'rgba(25, 135, 84, 0.8)'],
+            borderColor: ['rgba(255, 193, 7, 1)', 'rgba(25, 135, 84, 1)'],
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8 } }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

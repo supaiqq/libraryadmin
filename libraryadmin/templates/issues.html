@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Выдача книг{% endblock %}
+{% block content %}
+<h1 class="mb-4"><i class="fas fa-exchange-alt text-primary"></i> Учёт выдачи книг</h1>
+
+<div class="issue-layout">
+    <!-- Форма новой выдачи -->
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fas fa-plus-circle text-success"></i> Новая выдача</h5>
+            <form method="POST" action="{{ url_for('issues') }}">
+                <div class="mb-3">
+                    <label for="id_instance" class="form-label">Экземпляр книги:</label>
+                    <select name="id_instance" id="id_instance" required class="form-select">
+                        <option value="">— Выберите экземпляр —</option>
+                        {% for inst in instances_available %}
+                        <option value="{{ inst.id_instance }}">{{ inst.title }} — №{{ inst.id_instance }} ({{ inst.location }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="id_reader_card" class="form-label">Читатель:</label>
+                    <select name="id_reader_card" id="id_reader_card" required class="form-select">
+                        <option value="">— Выберите читателя —</option>
+                        {% for r in readers_list %}
+                        <option value="{{ r.id_reader_card }}">{{ r.full_name }} (№{{ r.id_reader_card }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="issue_date" class="form-label">Дата выдачи:</label>
+                    <input type="date" name="issue_date" id="issue_date" value="{{ today }}" class="form-control">
+                </div>
+                <button type="submit" class="btn btn-success w-100"><i class="fas fa-check"></i> Зарегистрировать выдачу</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Журнал выдач -->
+    <div>
+        <h5 class="mb-3"><i class="fas fa-list"></i> Журнал выдач</h5>
+
+        <div class="row mb-3">
+            <div class="col-12">
+                <form method="GET" class="row g-2">
+                    <div class="col-md-5">
+                        <input type="text" name="search" placeholder="Поиск по книге или читателю..." value="{{ search }}" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <select name="status" class="form-select" onchange="this.form.submit()">
+                            <option value="all" {{ 'selected' if filter_status == 'all' }}>Все</option>
+                            <option value="active" {{ 'selected' if filter_status == 'active' }}>Только активные</option>
+                            <option value="returned" {{ 'selected' if filter_status == 'returned' }}>Только возвращённые</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary w-100" type="submit"><i class="fas fa-search"></i></button>
+                    </div>
+                    <div class="col-md-2">
+                        {% if search or filter_status != 'all' %}
+                            <a href="{{ url_for('issues') }}" class="btn btn-outline-secondary w-100">Сброс</a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if issues %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle bg-white rounded shadow-sm">
+                <thead class="table-light">
+                    <tr>
+                        <th>Книга</th>
+                        <th>Экз. №</th>
+                        <th>Читатель</th>
+                        <th>Выдана</th>
+                        <th>Возвращена</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for i in issues %}
+                    <tr>
+                        <td>{{ i.book_name }}</td>
+                        <td>{{ i.id_instance }}</td>
+                        <td>{{ i.reader_name }}</td>
+                        <td>{{ i.issue_date }}</td>
+                        <td>{{ i.return_date or '—' }}</td>
+                        <td>
+                            {% if i.return_date is none %}
+                                <form method="POST" action="{{ url_for('return_book') }}" style="display:inline">
+                                    <input type="hidden" name="id_instance" value="{{ i.id_instance }}">
+                                    <input type="hidden" name="issue_date" value="{{ i.issue_date }}">
+                                    <button type="submit" class="btn btn-sm btn-warning"><i class="fas fa-undo-alt"></i> Возврат</button>
+                                </form>
+                            {% else %}
+                                <span class="badge bg-success">Возвращена</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-exchange-alt fa-3x"></i>
+            <p class="text-muted">Журнал выдач пуст</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

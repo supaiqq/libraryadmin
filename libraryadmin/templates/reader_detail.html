@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ reader.full_name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0"><i class="fas fa-user text-primary"></i> {{ reader.full_name }}</h1>
+    <a href="{{ url_for('readers') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Назад</a>
+</div>
+
+<div class="detail-card">
+    <div class="detail-row">
+        <span class="detail-label">№ читательского билета:</span>
+        <span>{{ reader.id_reader_card }}</span>
+    </div>
+    <div class="detail-row">
+        <span class="detail-label">Дата выдачи билета:</span>
+        <span>{{ reader.issue_date }}</span>
+    </div>
+</div>
+
+<h2 class="mb-3">История выдач</h2>
+{% if issues %}
+<div class="table-responsive">
+    <table class="table table-hover align-middle bg-white rounded shadow-sm">
+        <thead class="table-light">
+            <tr>
+                <th>Книга</th>
+                <th>Экз. №</th>
+                <th>Расположение</th>
+                <th>Дата выдачи</th>
+                <th>Дата возврата</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in issues %}
+            <tr>
+                <td>{{ i.book_name }}</td>
+                <td>{{ i.id_instance }}</td>
+                <td>{{ i.location }}</td>
+                <td>{{ i.issue_date }}</td>
+                <td>{{ i.return_date or '—' }}</td>
+                <td>
+                    {% if i.return_date %}
+                        <span class="badge bg-success">Возвращена</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">На руках</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-history fa-3x"></i>
+    <p class="text-muted">История выдач отсутствует</p>
+</div>
+{% endif %}
+{% endblock %}
